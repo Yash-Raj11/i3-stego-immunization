@@ -18,7 +18,28 @@ Legend: 🖥 CPU is fine · ⚡ needs a GPU (Colab/Kaggle free tier is enough)
 
 ---
 
-## Phase 1 — prove it works on the models attackers actually use
+## ★ Milestone 1 — prove it on Stable Diffusion (current)
+- [x] `i3 demo` / `i3 morph-test`: SD-1.5 img2img + inpainting on original vs protected, same seed/prompt,
+      before/after figures and face-region metrics (docs/DEMO.md)
+- [x] `configs/sd_demo.yaml`: protect against the real SD VAE (+ TAESD ensemble)
+- [ ] **M1.1** Run the demo on the sample + 5–10 consented / public-domain portraits (include darker
+      skin tones and a low-light photo). Prompt for Claude Code: `/i3-sd-demo <photo>` for each.
+- [ ] **M1.2** Tune for a clear, honest result.
+  > Use /i3-experiment to sweep `--face-psnr 30,32,34` and then `--mode targeted,untargeted` with
+  > `i3 demo ... --config configs/sd_demo.yaml`. Pick the setting with the largest img2img drop at
+  > face PSNR ≥ 32 dB. Record everything in docs/EXPERIMENTS.md and update configs/sd_demo.yaml.
+- [ ] **M1.3** Robustness of the demo: does the effect survive WhatsApp first?
+  > Add an `--attack whatsapp_like` option to `i3 morph-test` that applies an `attacks.ATTACKS` entry to
+  > both inputs before editing. Add a test with the fake backend. Then run the demo with it.
+- [ ] **M1.4** Presentation pack.
+  > Write `scripts/make_slides_figures.py` that collects before_after.png from every reports/demo_* folder
+  > into one contact sheet plus a summary table (mean drop per edit, face PSNR of inputs).
+
+Only after Milestone 1 is convincing, continue with other models below.
+
+---
+
+## Phase 1 — beyond SD-1.5 (after Milestone 1)
 
 **P1.1 ⚡ Real SD-VAE + ensemble surrogate.** Today we optimise against TAESD (a distilled copy of the
 SD VAE). Measure transfer and use an ensemble.
@@ -28,7 +49,7 @@ SD VAE). Measure transfer and use an ensemble.
 > `i3 evaluate --surrogate sd-vae`. Summarise transfer (TAESD-only → evaluated on SD-VAE) in a table
 > in docs/EXPERIMENTS.md. Don't change the optimiser.
 
-**P1.2 ⚡ End-to-end img2img / inpainting test.** Recon-PSNR is only a proxy; test the real threat.
+**P1.2 ✅ done as Milestone 1 (`i3 morph-test`).** Original description kept for reference: Recon-PSNR is only a proxy; test the real threat.
 > Add `scripts/sd_attack_test.py`: given original + protected images, run diffusers
 > StableDiffusionImg2ImgPipeline (an SD-1.5 checkpoint such as stable-diffusion-v1-5/stable-diffusion-v1-5, strength 0.3/0.5/0.7, fixed seed,
 > a neutral prompt like "a photo of a person") and an inpainting pipeline (mask = face region from

@@ -31,6 +31,17 @@ protected face comes back with smeared eyes and mouth.*
 This is a working research prototype, not a finished defence. Read
 [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) before claiming anything.
 
+## Stable Diffusion before / after demo (current milestone)
+
+```bash
+pip install -e ".[sd]"
+i3 demo assets/sample_astronaut.png --owner you@example.com --config configs/sd_demo.yaml --out reports/demo_sd
+```
+Protects the photo against the real SD VAE, then runs the **same** Stable Diffusion 1.5 img2img and
+inpainting edits (same prompt and seed) on the original and on the immunised photo, and writes
+`before_after.png`, `grid.png` and a metrics report. Details and tuning: [docs/DEMO.md](docs/DEMO.md).
+In VS Code: *Terminal → Run Task… → "i3: SD demo (sample)"*. In Claude Code: `/i3-sd-demo`.
+
 ## Quick start
 
 Full step-by-step instructions (Windows/macOS/Linux, VS Code, Git/GitHub, Claude Code):
@@ -83,6 +94,30 @@ adversarial component with L2-normalised steps to push the surrogate encoder's f
 the original, while a margin loss keeps every payload bit decodable. Hard projections keep PSNR ≥ 38 dB
 overall and ≥ 34 dB on the face, with chroma noise limited. Details and the design rationale:
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Prior work and what is new here
+
+This project builds on published ideas and cites them; the implementation in this repository is
+written from scratch for this project.
+
+| idea taken from prior research | source |
+|---|---|
+| attacking the image encoder of a latent diffusion model to spoil edits | PhotoGuard (Salman et al., ICML 2023) |
+| imperceptible "cloaks" against generative mimicry | Glaze (Shan et al., USENIX Security 2023) |
+| optimising through random transformations (EOT) | Athalye et al., ICML 2018 |
+| spread-spectrum watermarking, improved spread spectrum | Cox et al. 1997; Malvar & Florêncio 2003 |
+| JND / perceptual masking | Chou & Li 1995 |
+
+What this project adds (the original contribution):
+1. **Steganographic immunisation** – one perturbation optimised *jointly* for latent disruption and a
+   keyed, error-corrected ownership payload, so the protection also carries provenance evidence.
+2. **Face-relevancy budget (W_PIR) + JND shaping + a face-region visibility constraint**, instead of a
+   uniform L∞ budget over the whole image.
+3. **An EOT distribution modelled on Indian sharing habits** (WhatsApp/Instagram/Telegram resizing and
+   recompression, beauty filters) and evaluation with real codecs and purification attacks.
+4. **Inclusivity by design** – illumination-normalised face analysis and chroma-limited budgets aimed at
+   darker skin tones and low-light photos (audit planned).
+5. Provenance package for Indian cyber-law complaints (signed manifest; see docs/LEGAL_NOTES.md).
 
 ## Roadmap
 SD-VAE/img2img validation, identity (ArcFace) surrogate for face-swap, crop-robust payload, generator

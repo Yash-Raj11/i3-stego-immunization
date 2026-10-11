@@ -50,6 +50,50 @@ def _apply_overrides(cfg, a) -> None:
         cfg.saliency.backend = a.face_backend
 
 
+def _protect_opts(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--surrogate", help="taesd | sd-vae | taesd+sd-vae")
+    p.add_argument("--steps", type=int)
+    p.add_argument("--eps", type=float, help="per-pixel cap in 0-255 units where W_PIR=1 (default 16)")
+    p.add_argument("--psnr", type=float, help="minimum whole-image PSNR in dB (default 38)")
+    p.add_argument("--face-psnr", type=float, help="minimum PSNR on the face region (default 34; 0 disables)")
+    p.add_argument("--eot-samples", type=int)
+    p.add_argument("--mode", choices=["targeted", "untargeted"])
+    p.add_argument("--payload-alpha", type=float)
+    p.add_argument("--max-side", type=int)
+    p.add_argument("--generator", help="Phase-2 generator checkpoint for a fast warm start (then use ~15 steps)")
+    p.add_argument("--face-backend", choices=["auto", "mediapipe", "yunet", "haar"])
+    p.add_argument("--debug", action="store_true", help="also save masks and the amplified perturbation")
+
+
+def _morph_opts(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--strengths", default="0.3,0.5", help="img2img strengths, comma-separated (default 0.3,0.5)")
+    p.add_argument("--no-inpaint", action="store_true", help="skip the background-inpainting edit")
+    p.add_argument("--prompt", help="img2img prompt")
+    p.add_argument("--scene-prompt", help="inpainting prompt for the new background")
+    p.add_argument("--sd-steps", type=int, default=30, help="diffusion steps per edit (default 30)")
+    p.add_argument("--seed", type=int, default=1234)
+    p.add_argument("--size", type=int, default=512, help="edit resolution, long side (default 512)")
+
+
+def _morph_config(a, cfg):
+    from .morph import MorphConfig
+
+    mc = MorphConfig(
+        img2img_strengths=tuple(float(x) for x in a.strengths.split(",") if x.strip()),
+        inpaint=not a.no_inpaint,
+        steps=a.sd_steps,
+        seed=a.seed,
+        size=a.size,
+        device=cfg.device,
+        models_dir=cfg.models_dir,
+    )
+    if a.prompt:
+        mc.prompt = a.prompt
+    if a.scene_prompt:
+        mc.scene_prompt = a.scene_prompt
+    return mc
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="i3", description="Imperceptible Image Immunization + steganographic payload")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -63,18 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("input")
     p.add_argument("-o", "--output", help="output path (default: <input>.protected.png)")
     p.add_argument("--owner", required=True, help="owner id (e-mail, phone, handle) - only an HMAC tag is embedded")
-    p.add_argument("--surrogate", help="taesd | sd-vae | taesd+sd-vae")
-    p.add_argument("--steps", type=int)
-    p.add_argument("--eps", type=float, help="per-pixel cap in 0-255 units where W_PIR=1 (default 16)")
-    p.add_argument("--psnr", type=float, help="minimum whole-image PSNR in dB (default 38)")
-    p.add_argument("--face-psnr", type=float, help="minimum PSNR on the face region (default 34; 0 disables)")
-    p.add_argument("--eot-samples", type=int)
-    p.add_argument("--mode", choices=["targeted", "untargeted"])
-    p.add_argument("--payload-alpha", type=float)
-    p.add_argument("--max-side", type=int)
-    p.add_argument("--generator", help="Phase-2 generator checkpoint for a fast warm start (then use ~15 steps)")
-    p.add_argument("--face-backend", choices=["auto", "mediapipe", "yunet", "haar"])
-    p.add_argument("--debug", action="store_true", help="also save masks and the amplified perturbation")
+    _protect_opts(p)
 
     v = sub.add_parser("verify", help="read the payload back from a (possibly re-shared) image")
     _common(v)
@@ -90,6 +123,21 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--surrogate")
     e.add_argument("--max-side", type=int)
     e.add_argument("--out", default="reports/latest")
+
+    mt = sub.add_parser("morph-test", help="run real Stable Diffusion edits on original vs protected")
+    _common(mt)
+    mt.add_argument("--original", required=True)
+    mt.add_argument("--protected", required=True)
+    mt.add_argument("--out", default="reports/morph_test")
+    _morph_opts(mt)
+
+    d = sub.add_parser("demo", help="protect an image, then run the Stable Diffusion morph test on it")
+    _common(d)
+    d.add_argument("input")
+    d.add_argument("--owner", required=True)
+    d.add_argument("--out", default="reports/demo", help="output folder (protected image + figures)")
+    _protect_opts(d)
+    _morph_opts(d)
 
     j = sub.add_parser("inspect-jpeg", help="estimate JPEG quality/size of files downloaded from a platform")
     j.add_argument("files", nargs="+")
@@ -134,6 +182,24 @@ def main(argv: list[str] | None = None) -> int:
         res = pipeline.evaluate_file(a.original, a.protected, cfg, a.out)
         print(pipeline.render_markdown(res))
         print(f"full report: {a.out}/report.json")
+        return 0
+    if a.cmd in ("morph-test", "demo"):
+        from .morph import render_markdown as morph_md
+        from .morph import run_morph_test
+
+        out = Path(a.out)
+        if a.cmd == "demo":
+            protected = out / (Path(a.input).stem + ".protected.png")
+            res = pipeline.protect_file(a.input, protected, a.owner, cfg, debug=True)
+            print(json.dumps(res, indent=2))
+            original = out / f"{Path(a.input).stem}.protected_debug" / "prepared_original.png"
+            if not original.exists():
+                original = Path(a.input)
+        else:
+            original, protected = Path(a.original), Path(a.protected)
+        rep = run_morph_test(pipeline.load_rgb(original), pipeline.load_rgb(protected), out, _morph_config(a, cfg))
+        print(morph_md(rep))
+        print(f"figures: {out}/before_after.png  {out}/grid.png")
         return 0
     return 1
 

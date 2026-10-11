@@ -13,6 +13,10 @@ One perturbation, two layers, optimised jointly through an EOT ("social-media") 
   mid-band DCT of a canonical 256×256 luma grid, host-interference cancelled, plus an
   Ed25519-signed sidecar manifest.
 
+## Current milestone
+Show that immunisation spoils **Stable Diffusion 1.5** edits (img2img + inpainting) with convincing
+before/after figures (`i3 demo`, docs/DEMO.md). Other models (SDXL, Flux, face-swap) come later.
+
 ## Commands
 ```bash
 pip install -e ".[dev]"                 # once, inside .venv
@@ -22,10 +26,12 @@ i3 protect IMG --owner ID [--steps 20 for quick loops] [--debug]
 i3 verify IMG --owner ID --manifest IMG.i3.json
 i3 evaluate --original IMG --protected OUT --out reports/x
 i3 inspect-jpeg FILE.jpg                # estimate a platform's JPEG quality
+i3 demo IMG --owner ID --config configs/sd_demo.yaml --out reports/x   # protect + SD edits + figures
+i3 morph-test --original A --protected B --out reports/y            # SD edits only
 python -m pytest -m "not slow"          # fast tests (random surrogate, a few seconds)
 ruff check src tests scripts && ruff format src tests scripts
 ```
-Project skills: `/i3-eval [img]`, `/i3-experiment <flag> <v1,v2>`, `/i3-next-phase [item]`.
+Project skills: `/i3-sd-demo [img]`, `/i3-eval [img]`, `/i3-experiment <flag> <v1,v2>`, `/i3-next-phase [item]`.
 
 ## Code map (src/i3/)
 | file | role |
@@ -39,6 +45,8 @@ Project skills: `/i3-eval [img]`, `/i3-experiment <flag> <v1,v2>`, `/i3-next-pha
 | `jnd.py` | visibility (JND) map: luminance + texture masking |
 | `generator.py` | Phase-2 U-Net warm start + shared `caps_from_masks` |
 | `surrogates.py` | `taesd`, `sd-vae`, `random` (tests only), `a+b` ensembles |
+| `morph.py` | SD-1.5 img2img/inpainting morph test, before/after figures (diffusers, lazy import) |
+| `devices.py` | MPS/CUDA portability helpers |
 | `attacks.py` | REAL (PIL) attacks + platform presets for evaluation |
 | `pipeline.py` / `cli.py` | file-level protect / verify / evaluate, argparse CLI |
 | `config.py` + `configs/default.yaml` | dataclass config, YAML overrides |

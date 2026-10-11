@@ -1,0 +1,25 @@
+# Preset for the Stable Diffusion before/after demo:   i3 demo PHOTO --owner ID --config configs/sd_demo.yaml
+# Optimises against the REAL SD-1.x VAE (plus TAESD) so the effect on SD edits is as strong as possible.
+# Needs: pip install -e ".[sd]". Apple Silicon (MPS) or a CUDA GPU recommended (~3-10 min per photo).
+
+surrogate: taesd+sd-vae   # ensemble: real SD VAE + its distilled copy
+models_dir: models
+keys_dir: keys
+max_side: 512             # SD-1.5 works natively at 512 px
+device: auto
+
+immunize:
+  eps_255: 16
+  chroma_ratio: 0.15
+  steps: 150
+  step_frac: 0.15
+  momentum: 0.5
+  eot_samples: 1
+  psnr_min: 38.0
+  face_psnr_min: 32.0     # a little more budget than the default (34) for a visible demo; try 30-34
+  mode: untargeted        # also try: targeted  (compare with /i3-experiment --mode targeted,untargeted)
+  payload_alpha: 0.005
+  payload_lr: 0.0002
+  payload_energy_slack: 1.1
+  adv_floor: 0.0
+  lambda_wm: 1.0

@@ -1,15 +1,69 @@
 {
   "version": "2.0.0",
   "tasks": [
-    { "label": "i3: download models", "type": "shell", "command": "python scripts/download_models.py", "problemMatcher": [] },
-    { "label": "i3: tests (fast)", "type": "shell", "command": "python -m pytest -m \"not slow\"", "group": "test", "problemMatcher": [] },
-    { "label": "i3: tests (all)", "type": "shell", "command": "python -m pytest", "group": "test", "problemMatcher": [] },
-    { "label": "i3: lint", "type": "shell", "command": "ruff check src tests scripts && ruff format --check src tests scripts", "problemMatcher": [] },
+    {
+      "label": "i3: SD demo (sample)",
+      "type": "shell",
+      "command": "i3 demo assets/sample_astronaut.png --owner demo@example.com --config configs/sd_demo.yaml --out reports/demo_sd",
+      "problemMatcher": []
+    },
+    {
+      "label": "i3: SD demo (any photo)",
+      "type": "shell",
+      "command": "i3 demo \"${input:photo}\" --owner \"${input:owner}\" --config configs/sd_demo.yaml --out reports/demo_custom",
+      "problemMatcher": []
+    },
+    {
+      "label": "i3: install Stable Diffusion extras",
+      "type": "shell",
+      "command": "pip install -e \".[sd]\"",
+      "problemMatcher": []
+    },
+    {
+      "label": "i3: download models",
+      "type": "shell",
+      "command": "python scripts/download_models.py",
+      "problemMatcher": []
+    },
+    {
+      "label": "i3: tests (fast)",
+      "type": "shell",
+      "command": "python -m pytest -m \"not slow\"",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "i3: tests (all)",
+      "type": "shell",
+      "command": "python -m pytest",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "i3: lint",
+      "type": "shell",
+      "command": "ruff check src tests scripts && ruff format --check src tests scripts",
+      "problemMatcher": []
+    },
     {
       "label": "i3: demo (protect + evaluate sample)",
       "type": "shell",
       "command": "i3 protect assets/sample_astronaut.png -o outputs/sample.protected.png --owner me@example.com --debug && i3 evaluate --original assets/sample_astronaut.png --protected outputs/sample.protected.png --out reports/sample",
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "photo",
+      "type": "promptString",
+      "description": "Path to the photo (relative to the project)",
+      "default": "assets/sample_astronaut.png"
+    },
+    {
+      "id": "owner",
+      "type": "promptString",
+      "description": "Owner id (e.g. your e-mail)",
+      "default": "you@example.com"
     }
   ]
 }
