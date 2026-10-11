@@ -22,6 +22,17 @@ a laptop GPU); the log prints `s/step` and the remaining time. Then the SD edits
 - stronger: `--refine-steps 40` (takes about twice as long)
 - already protected? use `i3 morph-test` and skip protection entirely
 
+## Not enough memory? Three options
+| option | memory on your laptop | strength | how |
+|---|---|---|---|
+| **Google Colab (recommended)** | none – runs on a free cloud GPU | full | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Yash-Raj11/i3-stego-immunization/blob/main/notebooks/sd_demo_colab.ipynb) → Runtime → T4 GPU → Run all |
+| **Laptop, low-memory mode** | ~3–5 GB | a bit weaker | `i3 demo PHOTO --owner ID --config configs/sd_demo_lite.yaml --low-mem --out reports/demo_lite` |
+| **Laptop, two separate steps** | lowest peak | a bit weaker | `i3 protect ...` first, close other apps, then `i3 morph-test ... --low-mem` |
+
+`--low-mem` = Stable Diffusion in half precision + img2img only (one model instead of two).
+`configs/sd_demo_lite.yaml` = protection against TAESD only (no gradient pass through the big SD VAE).
+Kaggle Notebooks (free GPU, 30 h/week) work the same way as Colab: upload `notebooks/sd_demo_colab.ipynb`.
+
 ## Run it
 **One command** (protect + edits + figures):
 ```bash

@@ -33,6 +33,8 @@ This is a working research prototype, not a finished defence. Read
 
 ## Stable Diffusion before / after demo (current milestone)
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Yash-Raj11/i3-stego-immunization/blob/main/notebooks/sd_demo_colab.ipynb)  ← runs the whole demo on a free cloud GPU (recommended if your laptop has ≤16 GB RAM)
+
 ```bash
 pip install -e ".[sd]"
 i3 demo assets/sample_astronaut.png --owner you@example.com --config configs/sd_demo.yaml --out reports/demo_sd

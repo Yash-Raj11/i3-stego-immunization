@@ -72,6 +72,7 @@ class MorphConfig:
     seed: int = 1234
     size: int = 512
     device: str = "auto"
+    half: bool = False  # fp16 weights on MPS/CPU too (half the memory); CUDA always uses fp16
     models_dir: str = "models"
     img2img_model: str = IMG2IMG_MODEL
     inpaint_model: str = INPAINT_MODEL
@@ -136,14 +137,26 @@ def face_score(rgb: np.ndarray, models_dir: str | Path) -> float:
 
 
 # --------------------------------------------------------------------------- pipelines
-def _device_and_dtype(name: str):
+def _device_and_dtype(name: str, half: bool = False):
     import torch
 
     from .pipeline import pick_device
 
     dev = pick_device(name)
-    # fp16 on CUDA; fp32 on MPS/CPU (SD's VAE produces NaNs/black images in fp16 on MPS)
-    return dev, (torch.float16 if dev.type == "cuda" else torch.float32)
+    # fp16 on CUDA. On MPS fp32 is the safe default; --low-mem/--half switches to fp16 (half the
+    # memory; on some setups this can give black images - run_morph_test warns if it happens).
+    use_half = dev.type == "cuda" or (half and dev.type == "mps")
+    return dev, (torch.float16 if use_half else torch.float32)
+
+
+def free_device_memory() -> None:
+    import torch
+
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        torch.mps.empty_cache()
 
 
 def _load(cls, repo: str, dev, dtype):
@@ -154,8 +167,10 @@ def _load(cls, repo: str, dev, dtype):
         pipe = cls.from_pretrained(repo, **kw)
     pipe = pipe.to(dev)
     pipe.set_progress_bar_config(disable=True)
-    if dev.type == "mps":
-        pipe.enable_attention_slicing()
+    if dev.type != "cuda":
+        pipe.enable_attention_slicing()  # lower peak memory on Apple Silicon / CPU
+        if hasattr(pipe, "enable_vae_slicing"):
+            pipe.enable_vae_slicing()
     return pipe
 
 
@@ -164,7 +179,7 @@ def sd_edit_fn(cfg: MorphConfig, spec_kind: str) -> tuple[Callable[[EditSpec], E
     import torch
     from diffusers import StableDiffusionImg2ImgPipeline, StableDiffusionInpaintPipeline
 
-    dev, dtype = _device_and_dtype(cfg.device)
+    dev, dtype = _device_and_dtype(cfg.device, cfg.half)
     if spec_kind == "img2img":
         pipe = _load(StableDiffusionImg2ImgPipeline, cfg.img2img_model, dev, dtype)
     else:
@@ -191,11 +206,7 @@ def sd_edit_fn(cfg: MorphConfig, spec_kind: str) -> tuple[Callable[[EditSpec], E
     def release():
         nonlocal pipe
         del pipe
-        gc.collect()
-        if dev.type == "cuda":
-            torch.cuda.empty_cache()
-        elif dev.type == "mps":
-            torch.mps.empty_cache()
+        free_device_memory()
 
     return factory, release
 
@@ -262,6 +273,11 @@ def run_morph_test(
                 eo.save(out_dir / "edits" / f"{spec.name}_original.png")
                 ep.save(out_dir / "edits" / f"{spec.name}_protected.png")
                 eo_np, ep_np = np.asarray(eo), np.asarray(ep)
+                if min(eo_np.mean(), ep_np.mean()) < 3:
+                    log.warning(
+                        "edit %s produced a (near) black image - if you used --low-mem/--half, rerun without it",
+                        spec.name,
+                    )
                 r = {
                     "kind": spec.kind,
                     "strength": spec.strength,

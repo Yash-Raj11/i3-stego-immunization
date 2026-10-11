@@ -121,6 +121,9 @@ def protect_file(src: str | Path, dst: str | Path, owner_id: str, cfg: AppConfig
         # Stage 2: a few steps against a big/slow encoder (e.g. the real SD VAE), warm-started
         # from stage 1. Much cheaper than running all steps against the big model.
         del surrogate
+        from .morph import free_device_memory
+
+        free_device_memory()
         surrogate2 = get_surrogate(cfg.refine_surrogate, cfg.models_dir, device)
         ref_cfg = replace(cfg.immunize, steps=cfg.refine_steps, step_frac=cfg.immunize.step_frac * 0.5)
         log.info("stage 2: %d refine steps against %s", cfg.refine_steps, surrogate2.name)

@@ -1,0 +1,20 @@
+# Low-memory preset for laptops (8-16 GB):  i3 demo PHOTO --owner ID --config configs/sd_demo_lite.yaml --low-mem
+# Protection uses only TAESD (small, ~1-2 GB, seconds). No gradient pass through the big SD VAE.
+# The effect on Stable Diffusion is a bit weaker than configs/sd_demo.yaml - use Colab for the full version.
+
+surrogate: taesd
+refine_surrogate: null
+max_side: 512
+device: auto
+
+immunize:
+  eps_255: 16
+  chroma_ratio: 0.15
+  steps: 200
+  step_frac: 0.15
+  momentum: 0.5
+  eot_samples: 1
+  psnr_min: 38.0
+  face_psnr_min: 32.0
+  mode: untargeted
+  payload_alpha: 0.005

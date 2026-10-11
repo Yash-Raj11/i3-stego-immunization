@@ -86,6 +86,12 @@ def _morph_opts(p: argparse.ArgumentParser) -> None:
     p.add_argument("--sd-steps", type=int, default=30, help="diffusion steps per edit (default 30)")
     p.add_argument("--seed", type=int, default=1234)
     p.add_argument("--size", type=int, default=512, help="edit resolution, long side (default 512)")
+    p.add_argument("--half", action="store_true", help="fp16 Stable Diffusion on Apple Silicon (half the memory)")
+    p.add_argument(
+        "--low-mem",
+        action="store_true",
+        help="for 8-16 GB machines: fp16 + img2img only (one SD model instead of two)",
+    )
 
 
 def _morph_config(a, cfg):
@@ -93,7 +99,8 @@ def _morph_config(a, cfg):
 
     mc = MorphConfig(
         img2img_strengths=tuple(float(x) for x in a.strengths.split(",") if x.strip()),
-        inpaint=not a.no_inpaint,
+        inpaint=not (a.no_inpaint or a.low_mem),
+        half=a.half or a.low_mem,
         steps=a.sd_steps,
         seed=a.seed,
         size=a.size,
@@ -205,6 +212,9 @@ def main(argv: list[str] | None = None) -> int:
             protected = out / (Path(a.input).stem + ".protected.png")
             res = pipeline.protect_file(a.input, protected, a.owner, cfg, debug=True)
             print(json.dumps(res, indent=2))
+            from .morph import free_device_memory
+
+            free_device_memory()  # release the protection models before loading Stable Diffusion
             original = out / f"{Path(a.input).stem}.protected_debug" / "prepared_original.png"
             if not original.exists():
                 original = Path(a.input)
