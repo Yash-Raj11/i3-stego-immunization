@@ -16,6 +16,7 @@ from . import manifest as mf
 from . import metrics as M
 from . import payload as P
 from .config import AppConfig
+from .devices import pool_to
 from .immunize import immunize
 from .jnd import visibility_map
 from .keys import load_private_key, load_public_key, load_secret
@@ -243,9 +244,7 @@ def evaluate_file(original: str | Path, protected: str | Path, cfg: AppConfig, o
             for mm in members(surrogate):
                 zo, zp = mm.encode(xo), mm.encode(xp)
                 if region is not None:
-                    w = torch.nn.functional.adaptive_avg_pool2d(
-                        torch.from_numpy(region.astype(np.float32))[None, None].to(device), zo.shape[-2:]
-                    )
+                    w = pool_to(torch.from_numpy(region.astype(np.float32))[None, None].to(device), zo.shape[-2:])
                     shift = (((zp - zo) ** 2 * w).sum() / ((zo**2) * w).sum()).sqrt().item()
                 else:
                     shift = ((zp - zo).norm() / zo.norm()).item()

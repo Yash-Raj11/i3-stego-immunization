@@ -36,9 +36,9 @@ from dataclasses import asdict, dataclass, field
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 from .color import ycbcr_delta_to_rgb
+from .devices import pool_to
 from .generator import caps_from_masks
 from .stego import SpreadSpectrumCodec
 from .surrogates import Surrogate, members
@@ -100,7 +100,7 @@ def latent_loss(
         z = m.encode(x_adv)
         with torch.no_grad():
             z_t = m.encode(torch.full_like(x_adv, 0.5)) if mode == "targeted" else m.encode(x_ref)
-        w = F.adaptive_avg_pool2d(weight, z.shape[-2:])
+        w = pool_to(weight, z.shape[-2:])
         l = ((z - z_t) ** 2 * w).sum() / (w.sum() * z.shape[1] + 1e-9) / (torch.mean(z_t**2) + 1e-6)
         total = total + (l if mode == "targeted" else -l)
     return total
@@ -252,7 +252,7 @@ def immunize(
         shifts = []
         for mm in members(surrogate):
             zp, zc = mm.encode(out), mm.encode(x)
-            w = F.adaptive_avg_pool2d(wpir, zc.shape[-2:])
+            w = pool_to(wpir, zc.shape[-2:])
             shifts.append((((zp - zc) ** 2 * w).sum() / ((zc**2) * w).sum()).sqrt().item())
         dec, _ = codec.decode(out)
         ok = bool(np.array_equal(dec, bits))
