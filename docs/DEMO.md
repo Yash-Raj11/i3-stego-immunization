@@ -15,6 +15,13 @@ The first run downloads from Hugging Face (cached afterwards):
 
 Hardware: Apple Silicon (MPS) or an NVIDIA GPU. 16 GB RAM recommended. CPU works but is very slow.
 
+**How long it takes.** Protection runs in two stages: 150 fast steps against TAESD (seconds), then 20
+refine steps against the real SD VAE. The real VAE is large, so each refine step is slow (several seconds on
+a laptop GPU); the log prints `s/step` and the remaining time. Then the SD edits run (a few minutes).
+- quickest preview: add `--refine-surrogate none` (TAESD only)
+- stronger: `--refine-steps 40` (takes about twice as long)
+- already protected? use `i3 morph-test` and skip protection entirely
+
 ## Run it
 **One command** (protect + edits + figures):
 ```bash
@@ -66,7 +73,7 @@ Run a few variants and keep the best trade-off (the `/i3-experiment` command in 
 | `--face-psnr 30 … 34` | lower = stronger protection, more visible |
 | `--steps 150 … 300` | more optimisation = stronger, slower |
 | `--mode targeted` vs `untargeted` | try both; the best choice can depend on the edit |
-| `--surrogate sd-vae` | only the real VAE (slower, most direct for SD) |
+| `--refine-steps 10 … 40` | more steps against the real SD VAE = more direct effect on SD, slower |
 | `--strengths` | protection is usually most visible at low/medium img2img strength |
 
 Be honest in the presentation: show the visibility cost next to the effect, report the settings, and

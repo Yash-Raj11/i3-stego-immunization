@@ -27,10 +27,21 @@ def _common(p: argparse.ArgumentParser) -> None:
 
 
 def _apply_overrides(cfg, a) -> None:
-    for k in ("keys_dir", "models_dir", "device", "surrogate", "max_side", "generator"):
+    for k in (
+        "keys_dir",
+        "models_dir",
+        "device",
+        "surrogate",
+        "max_side",
+        "generator",
+        "refine_surrogate",
+        "refine_steps",
+    ):
         v = getattr(a, k, None)
         if v is not None:
             setattr(cfg, k, v)
+    if getattr(a, "refine_surrogate", None) in ("none", ""):
+        cfg.refine_surrogate = None
     im = cfg.immunize
     if getattr(a, "steps", None) is not None:
         im.steps = a.steps
@@ -52,6 +63,8 @@ def _apply_overrides(cfg, a) -> None:
 
 def _protect_opts(p: argparse.ArgumentParser) -> None:
     p.add_argument("--surrogate", help="taesd | sd-vae | taesd+sd-vae")
+    p.add_argument("--refine-surrogate", help="stage 2 encoder after the main steps, e.g. sd-vae ('none' disables)")
+    p.add_argument("--refine-steps", type=int, help="number of stage-2 steps (default 20)")
     p.add_argument("--steps", type=int)
     p.add_argument("--eps", type=float, help="per-pixel cap in 0-255 units where W_PIR=1 (default 16)")
     p.add_argument("--psnr", type=float, help="minimum whole-image PSNR in dB (default 38)")

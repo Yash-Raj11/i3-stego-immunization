@@ -144,3 +144,39 @@ def test_taesd_surrogate_loads(face_crop):
         r = s.decode(z)
     assert z.shape == (1, 4, 32, 32) and r.shape == (1, 3, 256, 256)
     assert psnr(face_crop, to_pil(r)) > 20  # TAESD reconstructs a clean face reasonably
+
+
+def test_two_stage_refine(tmp_path, monkeypatch):
+    """Stage 1 (fast surrogate) + stage 2 refine against another encoder, end to end via the CLI."""
+    monkeypatch.chdir(tmp_path)
+    keys = tmp_path / "keys"
+    assert main(["keygen", "--keys", str(keys)]) == 0
+    out = tmp_path / "p.png"
+    rc = main(
+        [
+            "protect",
+            str(SAMPLE),
+            "-o",
+            str(out),
+            "--owner",
+            "me",
+            "--keys",
+            str(keys),
+            "--models",
+            str(MODELS),
+            "--surrogate",
+            "random",
+            "--steps",
+            "3",
+            "--refine-surrogate",
+            "random",
+            "--refine-steps",
+            "2",
+            "--max-side",
+            "512",
+        ]
+    )
+    assert rc == 0
+    m = json.loads(out.with_suffix(".i3.json").read_text())
+    assert m["params"]["refine_surrogate"] == "random" and m["params"]["refine_steps"] == 2
+    assert m["params"]["result"]["psnr"] >= 38

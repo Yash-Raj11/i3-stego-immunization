@@ -77,11 +77,12 @@ class ImmunizeResult:
     payload_ok: bool
     seconds: float
     history: list = field(default_factory=list)
+    adv_ycbcr: torch.Tensor | None = None  # final adversarial component (YCbCr), for warm-starting a refine stage
 
     def summary(self) -> dict:
         d = asdict(self)
-        d.pop("protected")
-        d.pop("history")
+        for k in ("protected", "history", "adv_ycbcr"):
+            d.pop(k)
         return d
 
 
@@ -236,8 +237,18 @@ def immunize(
         project()
         rec = {"step": step, "adv": float(l_adv_tot.detach()), "wm": float(l_wm_tot.detach())}
         history.append(rec)
-        if progress and (step % 10 == 0 or step == cfg.steps - 1):
-            log.info("step %3d/%d  L_adv %+.4f  L_wm %.4f", step, cfg.steps, rec["adv"], rec["wm"])
+        every = 10 if cfg.steps >= 40 else 5
+        if progress and (step % every == 0 or step == cfg.steps - 1):
+            per = (time.time() - t0) / (step + 1)
+            log.info(
+                "step %3d/%d  L_adv %+.4f  L_wm %.4f  (%.1f s/step, ~%.0f s left)",
+                step,
+                cfg.steps,
+                rec["adv"],
+                rec["wm"],
+                per,
+                per * (cfg.steps - step - 1),
+            )
 
     # ---- finalise: quantise to 8 bit, re-check constraints ---------------------
     with torch.no_grad():
@@ -264,4 +275,5 @@ def immunize(
         payload_ok=ok,
         seconds=round(time.time() - t0, 1),
         history=history,
+        adv_ycbcr=d_adv.detach().clone(),
     )

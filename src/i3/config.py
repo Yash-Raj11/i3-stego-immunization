@@ -30,6 +30,8 @@ class AppConfig:
     max_side: int = 1024
     device: str = "auto"
     generator: str | None = None  # Phase-2 checkpoint used as a warm start (models/generator.pt)
+    refine_surrogate: str | None = None  # optional stage 2 against a slow encoder, e.g. "sd-vae"
+    refine_steps: int = 20
     immunize: ImmunizeConfig = field(default_factory=ImmunizeConfig)
     stego: StegoConfig = field(default_factory=StegoConfig)
     saliency: SaliencyConfig = field(default_factory=SaliencyConfig)

@@ -1,8 +1,12 @@
 # Preset for the Stable Diffusion before/after demo:   i3 demo PHOTO --owner ID --config configs/sd_demo.yaml
-# Optimises against the REAL SD-1.x VAE (plus TAESD) so the effect on SD edits is as strong as possible.
-# Needs: pip install -e ".[sd]". Apple Silicon (MPS) or a CUDA GPU recommended (~3-10 min per photo).
+# Two-stage protection: 150 fast steps against TAESD (a small copy of the SD encoder, ~20 s on a Mac),
+# then 20 refine steps against the REAL SD-1.x VAE (the slow part, roughly 10 s/step on a laptop GPU).
+# Needs: pip install -e ".[sd]". Apple Silicon (MPS) or a CUDA GPU recommended.
+# Faster: --refine-steps 10, or --refine-surrogate none (TAESD only). Stronger: --refine-steps 40.
 
-surrogate: taesd+sd-vae   # ensemble: real SD VAE + its distilled copy
+surrogate: taesd          # stage 1 (fast)
+refine_surrogate: sd-vae  # stage 2 (real Stable Diffusion VAE)
+refine_steps: 20
 models_dir: models
 keys_dir: keys
 max_side: 512             # SD-1.5 works natively at 512 px

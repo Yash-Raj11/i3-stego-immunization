@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import numpy as np
@@ -114,11 +114,25 @@ def protect_file(src: str | Path, dst: str | Path, owner_id: str, cfg: AppConfig
         with torch.no_grad():
             init_adv = gen(x, wpir_t) * caps_from_masks(wpir_t, vis_t, cfg.immunize.eps, cfg.immunize.chroma_ratio)
         log.info("generator warm start from %s", cfg.generator)
+    log.info("stage 1: %d steps against %s", cfg.immunize.steps, surrogate.name)
     res = immunize(x, surrogate, codec, bits, wpir_t, vis_t, cfg.immunize, init_adv=init_adv)
+    stage1_seconds = res.seconds
+    if cfg.refine_surrogate and cfg.refine_steps > 0:
+        # Stage 2: a few steps against a big/slow encoder (e.g. the real SD VAE), warm-started
+        # from stage 1. Much cheaper than running all steps against the big model.
+        del surrogate
+        surrogate2 = get_surrogate(cfg.refine_surrogate, cfg.models_dir, device)
+        ref_cfg = replace(cfg.immunize, steps=cfg.refine_steps, step_frac=cfg.immunize.step_frac * 0.5)
+        log.info("stage 2: %d refine steps against %s", cfg.refine_steps, surrogate2.name)
+        res = immunize(x, surrogate2, codec, bits, wpir_t, vis_t, ref_cfg, init_adv=res.adv_ycbcr)
+        res.seconds = round(res.seconds + stage1_seconds, 1)
+        surrogate = surrogate2
     out = to_uint8(res.protected)
     save_image(out, dst)
     params = {
-        "surrogate": surrogate.name,
+        "surrogate": cfg.surrogate,
+        "refine_surrogate": cfg.refine_surrogate,
+        "refine_steps": cfg.refine_steps if cfg.refine_surrogate else 0,
         "mode": cfg.immunize.mode,
         "eps_255": round(cfg.immunize.eps * 255, 2),
         "steps": cfg.immunize.steps,
