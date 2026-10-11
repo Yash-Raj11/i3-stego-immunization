@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "anthropic.claude-code",
+    "ms-toolsai.jupyter",
+    "eamodio.gitlens"
+  ]
+}

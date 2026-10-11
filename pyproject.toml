@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "i3-stego-immunization"
+version = "0.1.0"
+description = "Imperceptible Image Immunization fused with a robust steganographic ownership payload"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "torch>=2.2",
+  "numpy>=1.24",
+  "pillow>=10.0",
+  "opencv-python-headless>=4.8,<5",  # 5.x moved Haar cascades to contrib
+  "reedsolo>=1.7",
+  "cryptography>=42",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+mediapipe = ["mediapipe>=0.10.14"]
+sd = ["diffusers>=0.27", "transformers>=4.40", "accelerate>=0.30", "safetensors"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+i3 = "i3.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: needs downloaded models / takes > 30 s (deselect with -m 'not slow')"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "E741", "B008"]

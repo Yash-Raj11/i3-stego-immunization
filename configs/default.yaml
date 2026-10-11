@@ -1,0 +1,48 @@
+# I3 default configuration. CLI flags override these values.
+# Every number here is a starting point – tune them with `i3 evaluate` on YOUR data.
+
+surrogate: taesd          # taesd | sd-vae | taesd+sd-vae (ensemble, better transfer, needs GPU ideally)
+models_dir: models
+keys_dir: keys
+max_side: 1024            # images are downscaled to this long side first (platforms do it anyway)
+device: auto              # auto | cpu | cuda | mps
+
+immunize:
+  eps_255: 16             # per-pixel cap (0-255 units) where W_PIR = 1; PSNR below is the real budget
+  chroma_ratio: 0.15      # colour noise (e.g. green tint on eyes) is the most visible artefact
+  steps: 100              # CPU: 100 x 1 EOT sample (~5-10 min for 512px). GPU: 300 x 4
+  step_frac: 0.15         # L2 step size as a fraction of the PSNR-derived L2 budget
+  momentum: 0.5
+  eot_samples: 1
+  psnr_min: 38.0          # hard constraint on the whole image, verified after 8-bit rounding
+  face_psnr_min: 34.0     # PSNR on the face region. Global 38 dB alone allows ~27 dB on the face = visible!
+  mode: untargeted        # untargeted (push latent away; best in our tests) | targeted (to grey latent, PhotoGuard)
+  payload_alpha: 0.005    # per-bit correlation target; 0.004 = subtler, 0.007 = tougher
+  payload_lr: 0.0002
+  payload_energy_slack: 1.1  # carrier may reshape (to also hurt the encoder) but not grow
+  adv_floor: 0.0          # adversarial cap in the background (0 = spend the budget on face + halo only)
+  lambda_wm: 1.0
+  eot:                    # Expectation-over-Transformation: the "social media" distribution
+    p_jpeg: 0.8
+    jpeg_quality: [60, 90]
+    p_resize: 0.6
+    resize_scale: [0.5, 1.0]
+    p_blur: 0.3
+    blur_sigma: [0.3, 1.0]
+    p_color: 0.5
+    p_noise: 0.3
+    p_crop: 0.5
+    crop_frac: [0.8, 1.0]
+
+stego:
+  canonical: 256          # payload grid; decoding resizes any copy back to this
+  band: [6, 28]           # zig-zag DCT positions used (mid band)
+  n_bits: 128             # = payload.CODED_BITS, don't change without changing payload.py
+
+saliency:
+  backend: auto           # auto | mediapipe | yunet | haar
+  floor: 0.10             # background weight
+  edge_mix: 0.4
+  illumination_normalize: true
+  vis_min: 0.35
+  dark_boost_cap: 12.0

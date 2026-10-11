@@ -1,0 +1,28 @@
+{
+  // The Python extension auto-detects ./.venv - pick it once via
+  // Ctrl+Shift+P -> "Python: Select Interpreter" (Windows: .venv\Scripts\python.exe)
+  "python.terminal.activateEnvironment": true,
+
+  // Tests: VS Code "Testing" panel (flask icon) runs pytest
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests", "-m", "not slow"],
+
+  // Formatting / linting with Ruff
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.organizeImports": "explicit" }
+  },
+  "editor.rulers": [120],
+
+  // Keep the explorer and search clean
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/*.egg-info": true
+  },
+  "search.exclude": { "models/**": true, "outputs/**": true, "reports/**": true, ".venv/**": true },
+  "files.eol": "\n"
+}

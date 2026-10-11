@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "i3 protect (sample face, quick)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "i3.cli",
+      "args": ["protect", "assets/sample_astronaut.png", "-o", "outputs/sample.protected.png",
+               "--owner", "me@example.com", "--steps", "20", "--debug"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "i3 verify (last output)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "i3.cli",
+      "args": ["verify", "outputs/sample.protected.png", "--owner", "me@example.com",
+               "--manifest", "outputs/sample.protected.i3.json"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "i3 evaluate (last output)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "i3.cli",
+      "args": ["evaluate", "--original", "assets/sample_astronaut.png",
+               "--protected", "outputs/sample.protected.png", "--out", "reports/sample"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug current test file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-x", "-q"],
+      "console": "integratedTerminal"
+    }
+  ]
+}

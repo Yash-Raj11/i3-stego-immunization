@@ -1,0 +1,47 @@
+# --- secrets: NEVER commit these -------------------------------------------
+keys/
+*.pem
+*.key
+.env
+
+# --- big / downloadable artefacts -------------------------------------------
+models/*
+!models/README.md
+*.pth
+*.pt
+*.onnx
+*.task
+*.safetensors
+
+# --- data & results (may contain real people's faces) -----------------------
+data/
+outputs/
+reports/
+*.protected.png
+*.i3.json
+*_debug/
+
+# --- python -------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+build/
+dist/
+
+# --- editors / OS -------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Claude Code: share project settings/skills, keep personal ones local -----
+.claude/settings.local.json

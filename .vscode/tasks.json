@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "i3: download models", "type": "shell", "command": "python scripts/download_models.py", "problemMatcher": [] },
+    { "label": "i3: tests (fast)", "type": "shell", "command": "python -m pytest -m \"not slow\"", "group": "test", "problemMatcher": [] },
+    { "label": "i3: tests (all)", "type": "shell", "command": "python -m pytest", "group": "test", "problemMatcher": [] },
+    { "label": "i3: lint", "type": "shell", "command": "ruff check src tests scripts && ruff format --check src tests scripts", "problemMatcher": [] },
+    {
+      "label": "i3: demo (protect + evaluate sample)",
+      "type": "shell",
+      "command": "i3 protect assets/sample_astronaut.png -o outputs/sample.protected.png --owner me@example.com --debug && i3 evaluate --original assets/sample_astronaut.png --protected outputs/sample.protected.png --out reports/sample",
+      "problemMatcher": []
+    }
+  ]
+}
